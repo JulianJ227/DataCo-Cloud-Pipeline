@@ -20,7 +20,7 @@ En esta sección se detalla la arquitectura de la solución utilizando el modelo
 ### 3.1 Nivel 1: Diagrama de Contexto
 El siguiente diagrama muestra cómo el Sistema de Datos de DataCo interactúa con los usuarios y los sistemas fuente existentes.
 
-![Diagrama de Contexto](./assets/C1-Contexto.png)
+![Diagrama de Contexto](./assets/C1-DataCo.drawio.png)
 
 **Elementos del Sistema:**
 * **Sistema de Datos DataCo:** Solución centralizada encargada de la ingesta, transformación y carga de datos.
