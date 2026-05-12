@@ -141,6 +141,101 @@ El diagrama de componentes detalla la estructura interna de Azure Databricks y l
 
 ## 9.ADRs
 
+## ADR-01 · Azure Data Factory sobre Azure Logic Apps para la orquestación
+
+## Contexto. 
+DataCo necesita orquestar la ingesta desde cuatro fuentes heterogéneas (SAP por SFTP, Oracle on-premise, archivos GPS y API de Salesforce) hacia el Data Lake, con frecuencia de cada 4 horas, manejo de reintentos y dependencias entre etapas. El equipo de datos tiene solo 2 analistas con SQL y Python básico. El presupuesto es máximo $80 USD/mes y el pipeline debe ser tolerante a fallos parciales (que una fuente falle no debe detener a las otras).
+
+## Alternativas evaluadas.
+
+Azure Logic Apps: orientado a flujos de integración tipo "if-this-then-that". Tiene conectores para Salesforce y SFTP, interfaz visual amigable. Ventaja: curva de aprendizaje muy baja para un equipo no-developer. Desventaja: mal optimizado para mover volúmenes altos de datos (5M registros), facturación por acción ejecutada se dispara en cargas masivas, integración débil con Databricks (no tiene actividad nativa para invocar notebooks Spark).
+Azure Data Factory: servicio nativo de Azure para movimiento y orquestación de datos. Ventajas: actividad de copia optimizada para volumen, integración nativa con Databricks (Notebook Activity), self-hosted Integration Runtime para alcanzar Oracle on-premise, tier gratuito que cubre el caso, manejo declarativo de dependencias y reintentos. Desventaja: más complejidad inicial que Logic Apps, su modelo de pipelines requiere comprensión de actividades y triggers.
+
+## Decisión. 
+Se adopta Azure Data Factory como orquestador único. La razón principal es que el caso involucra mover volumen significativo de datos hacia un lago y orquestar Databricks; Logic Apps no es la herramienta adecuada para ese patrón aunque sea más amigable. Adicionalmente, ADF permite definir cuatro pipelines independientes (uno por fuente) que pueden ejecutarse en paralelo y fallar de forma aislada — encajando con el requisito de tolerancia a fallos parciales.
+
+## Consecuencias.
+
+Positivas: Tier gratuito cubre el caso piloto sin costo, integración nativa con Databricks elimina código pegamento, monitoreo visual de ejecuciones cubre la auditoría requerida.
+Trade-offs: el equipo debe invertir tiempo en aprender el modelo de ADF (se mitiga con la documentación oficial). El self-hosted IR para Oracle requiere instalar un agente en la red de DataCo, lo cual añade un componente operativo a mantener.
+
+
+## ADR-02 · Azure Databricks Community Edition sobre Azure Synapse Analytics
+
+## Contexto. 
+El pipeline requiere transformaciones distribuidas: limpieza, deduplicación, estandarización de códigos cliente/producto entre SAP y CRM, y enriquecimiento cruzado de facturas con datos GPS. Volumen objetivo de hasta 5M registros por ejecución. Restricciones críticas: presupuesto mensual de $80 USD, equipo sin experiencia en Spark ni en administración de clústeres distribuidos.
+
+## Alternativas evaluadas.
+
+Azure Synapse Analytics: plataforma analítica integrada con SQL pools dedicados, Spark pools y orquestación. Ventajas: experiencia unificada, escalabilidad masiva, buen rendimiento para warehouses muy grandes. Desventajas: incluso en serverless el costo mensual estimado supera con holgura los $80 USD si se ejecuta cada 4h, requiere administración de pools, su ecosistema es más complejo para un equipo principiante.
+Azure Databricks (workspace pago): mejor experiencia desarrollo Spark, escalado automático, integración con ADF. Costo de DBU + VMs supera presupuesto piloto.
+Azure Databricks Community Edition: edición gratuita con clúster único de hasta 15 GB de RAM en Spark, notebooks colaborativos, sin tarjeta de crédito. Desventaja: sin SLA, sin integración nativa con Azure AD, los notebooks se ejecutan en infraestructura propia de Databricks (no en la suscripción Azure de DataCo) — la integración con ADF se hace vía REST API, no con la actividad nativa.
+
+## Decisión. 
+Se adopta Azure Databricks Community Edition para la fase piloto. El argumento decisivo es presupuesto: es la única alternativa que entrega Spark sin costo. La capacidad de 15 GB de RAM cubre holgadamente el dataset de prueba (1.000 registros pedidos por la rúbrica) y soporta el volumen objetivo si se procesan archivos por particiones diarias.
+
+## Consecuencias.
+
+Positivas: costo cero en procesamiento, los analistas pueden aprender Spark y PySpark en un entorno de bajo riesgo, los notebooks son portables a un workspace pago de Databricks cuando DataCo escale.
+Trade-offs: sin SLA — riesgo aceptable en piloto, no en producción real. La invocación desde ADF es por API REST y no nativa. Al pasar a producción será necesario migrar a un workspace pago o a Synapse, y este ADR debe revisarse. Se asume explícitamente que esta decisión es válida solo durante el piloto.
+
+
+## ADR-03 · Azure Data Lake Storage Gen2 sobre Blob Storage estándar
+
+## Contexto. 
+El pipeline necesita una zona raw para datos crudos en su formato original (CSV/JSON desde SAP, Oracle, GPS, Salesforce) y una zona curated con datos transformados en Parquet, organizados por fuente y fecha. Los datos contienen información sensible de precios y márgenes, y deben tener acceso restringido por roles. El presupuesto es ajustado.
+
+## Alternativas evaluadas.
+
+Azure Blob Storage estándar: almacenamiento de objetos genérico. Ventajas: costo por GB ligeramente menor, simple. Desventajas: namespace plano (no hay carpetas reales, solo prefijos), permisos limitados a nivel de contenedor (no por carpeta), peor rendimiento de Spark al listar grandes volúmenes de archivos.
+Azure Data Lake Storage Gen2: construido sobre Blob Storage pero con namespace jerárquico habilitado (HNS). Ventajas: estructura real de carpetas, ACLs POSIX por carpeta y archivo, optimizado para motores analíticos como Spark, soporte nativo de formato Parquet y particiones, mismo precio base que Blob con un pequeño recargo por operaciones de metadatos. Desventajas: ligero recargo de costo y un poco más de complejidad inicial.
+
+## Decisión. 
+Se adopta Azure Data Lake Storage Gen2. La justificación combina tres factores: el namespace jerárquico es necesario para organizar raw/<fuente>/<fecha>/ y curated/<entidad>/, las ACLs por carpeta resuelven el requisito de acceso restringido a datos sensibles de precios sin necesidad de cuentas separadas, y la práctica estándar del sector para arquitecturas tipo medallion exige ADLS Gen2 + Parquet.
+
+## Consecuencias.
+
+Positivas: organización limpia por fuente y fecha, permisos finos sin proliferar contenedores, lecturas Spark más rápidas, alineado con la arquitectura de referencia de Microsoft que cita el enunciado.
+Trade-offs: costo marginalmente superior a Blob estándar (despreciable a escala piloto), cualquier herramienta o script que asuma namespace plano debe ajustarse.
+
+## ADR-04 · Azure SQL Database sobre Azure Cosmos DB para el almacén analítico
+
+## Contexto. 
+El almacén final debe servir un modelo dimensional consolidado (hechos de ventas, dimensiones de cliente, producto, ruta) consultable desde Power BI Desktop. Las consultas son típicamente analíticas: agregaciones por periodo, región y producto. El equipo de DataCo conoce SQL bien pero no tiene experiencia con bases NoSQL. Power BI ya está licenciado y se conecta nativamente a SQL Server. Presupuesto: $80 USD/mes total para todo el stack.
+
+
+## Alternativas evaluadas.
+
+Azure Cosmos DB: base NoSQL multi-modelo, latencia muy baja, escalado global. Ventajas: excelente para cargas operacionales con altísimo throughput. Desventajas: costo por RU/s difícil de mantener bajo $80 USD para cargas analíticas, modelo de consultas distinto al SQL clásico (los analistas tendrían que aprender), conexión con Power BI menos directa, optimizado para perfiles de uso transaccional, no analítico.
+Azure SQL Database (Free tier): SQL Server gestionado con 32 GB de almacenamiento y 100.000 vCore-segundos/mes gratis. Ventajas: el equipo ya domina SQL, conector nativo en Power BI, soporta vistas, índices columnares y roles a nivel de objeto, encaja en presupuesto cero durante piloto. Desventajas: el free tier tiene cuota de cómputo limitada que en cierres de mes podría ser ajustada, escala vertical limitada frente a opciones masivas como Synapse.
+
+## Decisión. 
+Se adopta Azure SQL Database en su free tier. Tres razones convergen: el equipo no necesita aprender un paradigma nuevo, Power BI Desktop se conecta nativamente con un conector probado, y el costo en piloto es cero. Cosmos DB sería una elección equivocada para un caso analítico con perfil de consulta de BI tradicional.
+
+## Consecuencias.
+
+Positivas: sin costo en piloto, índices columnares aceleran las consultas analíticas de Power BI, los roles SQL cubren el requisito de acceso restringido a datos sensibles, los analistas son productivos desde el primer día.
+Trade-offs: en cierres de mes la cuota gratuita de cómputo puede saturarse — se debe monitorear y eventualmente escalar a tier pago. La escala máxima de Azure SQL es menor a la de Synapse; si DataCo crece a decenas de millones de registros/día este ADR debe revisarse.
+
+
+## ADR-05 · Power BI Desktop sobre Azure Analysis Services
+
+## Contexto. 
+La capa de visualización debe entregar dashboards de ventas, inventario y logística actualizados automáticamente cada 4 horas. Power BI Desktop ya está licenciado en los equipos de los analistas (gratuito). El presupuesto no permite herramientas adicionales de visualización. Los analistas conocen Power BI Desktop.
+
+## Alternativas evaluadas.
+
+Azure Analysis Services (AAS): servicio de modelado tabular en memoria, escalable, ideal cuando varios consumidores comparten un modelo semántico complejo. Ventajas: rendimiento superior con modelos grandes, modelo centralizado reusable. Desventajas: tier más bajo cuesta varias decenas de USD al mes, queda fuera del presupuesto $80 USD considerando todo el stack, requiere administración adicional, redundante para un caso piloto con un único modelo y pocos consumidores.
+Power BI Desktop con publicación local (.pbix): dashboards diseñados localmente, conexión directa o programada a Azure SQL, distribución del archivo dentro del equipo. Ventajas: costo cero (ya licenciado), se conecta nativamente a Azure SQL Database con el conector SQL Server, soporta refresh programado vía gateway si se publica al servicio, los analistas ya lo manejan. Desventajas: el refresh automático sin gateway es limitado, gestión de versiones del .pbix manual, escalabilidad de usuarios concurrentes inferior a un servicio centralizado.
+
+## Decisión. 
+Se adopta Power BI Desktop como herramienta de visualización del piloto. La restricción de presupuesto y el hecho de que ya está licenciado hacen de cualquier alternativa una decisión injustificable en esta fase.
+
+## Consecuencias.
+
+Positivas: costo adicional cero, productividad inmediata del equipo, conexión nativa a Azure SQL, cumple el requisito de "dashboard sin intervención manual" si se publica al Power BI Service con refresh programado.
+Trade-offs: la administración del modelo semántico es por archivo, no centralizada — adecuado para un piloto pero no para una organización con muchos creadores. Para escalar habrá que evaluar Power BI Premium o AAS, y este ADR debe revisarse cuando aumente el número de consumidores o la complejidad del modelo.
+
 ## 10.Implementación del Pipeline
 
 ## 11.Evidencias
