@@ -18,7 +18,6 @@
 * Implementación del Pipeline
 * Evidencias
 * Conclusiones
-* Referencias
 
 ## 3. Matriz de control de cambios
 | Versión | Fecha | Responsable | Descripcion |
@@ -29,6 +28,7 @@
 | 4.0 | 6/5/26 | Nataly Rivera| Creación diagrama c3|
 | 5.0 | 7/5/26 | Yuli Marin | Creación de objetivos, requerimientos y Arquitectura de solución|
 | 6.0 | 7/5/26 | Julian | Servicios implementados|
+| 7.0 | 12/5/26 | Yuli Marin | Arreglos finales documentación|
 
 
 ## 4. Contexto del Proyecto
@@ -237,9 +237,153 @@ Positivas: costo adicional cero, productividad inmediata del equipo, conexión n
 Trade-offs: la administración del modelo semántico es por archivo, no centralizada — adecuado para un piloto pero no para una organización con muchos creadores. Para escalar habrá que evaluar Power BI Premium o AAS, y este ADR debe revisarse cuando aumente el número de consumidores o la complejidad del modelo.
 
 ## 10.Implementación del Pipeline
+La implementación del pipeline de datos para DataCo se realizó utilizando servicios cloud de Microsoft Azure con el objetivo de automatizar el flujo ETL (Extract, Transform, Load) desde la ingesta de datos hasta su visualización en dashboards analíticos.
+
+La solución fue construida siguiendo una arquitectura escalable basada en capas RAW y CURATED, permitiendo separar los datos originales de los datos procesados y listos para análisis.
+
+## 10.1 Creación del Data Lake y almacenamiento RAW
+
+Como primera etapa, se configuró un contenedor RAW en Azure Data Lake Storage Gen2 para almacenar los archivos originales provenientes de las diferentes fuentes de datos simuladas del caso (ventas, clientes y productos).
+
+Los archivos fueron cargados inicialmente en formato CSV para representar la información exportada desde sistemas empresariales como SAP, Oracle y Salesforce.
+
+Durante esta etapa se validó:
+
+Creación del contenedor RAW.
+Carga correcta de archivos CSV.
+Disponibilidad de los datos dentro del Data Lake.
+Organización inicial del almacenamiento cloud.
+
+La arquitectura implementada permite posteriormente separar los datos procesados en una zona CURATED destinada a consumo analítico.
+
+## 10.2 Orquestación del pipeline con Azure Data Factory
+
+Posteriormente se implementó Azure Data Factory como servicio principal de orquestación del pipeline.
+
+Se utilizó la herramienta Copy Data para automatizar el movimiento de información desde la capa RAW hacia las siguientes etapas del proceso ETL.
+
+Dentro de Data Factory se configuraron:
+
+Pipelines automáticos.
+Datasets de entrada y salida.
+Validación de conexiones.
+Triggers de ejecución.
+Manejo básico de monitoreo.
+
+La ejecución del pipeline fue validada exitosamente mediante el panel de monitoreo de Azure Data Factory, donde se evidenció:
+
+Estado “Succeeded”.
+Tiempo de ejecución.
+Pipeline ejecutado correctamente.
+Flujo automatizado de datos.
+
+La implementación permitió reducir completamente los procesos manuales de carga de información que anteriormente eran realizados en Excel.
+
+## 10.3 Transformación de datos con Azure Databricks
+
+Una vez ingeridos los datos, se implementó Azure Databricks para realizar las transformaciones y limpieza de información.
+
+Se desarrollaron notebooks en Python utilizando Pandas y procesamiento distribuido compatible con Spark para:
+
+Leer archivos desde Azure Data Lake.
+Validar estructura de los datos.
+Eliminar registros duplicados.
+Estandarizar formatos.
+Calcular métricas derivadas.
+Preparar la información para análisis.
+
+Durante la ejecución del notebook se validó la lectura correcta de aproximadamente 1250 registros crudos provenientes del Data Lake.
+
+Las transformaciones implementadas permitieron mejorar la calidad y consistencia de la información antes de su carga final al almacén analítico.
+
+## 10.4 Carga de datos hacia Azure SQL Database
+
+Después de la transformación, los datos procesados fueron cargados hacia Azure SQL Database utilizando conexiones mediante SQLAlchemy y ODBC Driver.
+
+En esta etapa se realizó:
+
+Creación de la conexión segura hacia Azure SQL.
+Configuración del motor relacional.
+Inserción automática de registros.
+Creación de la tabla analítica hechos_ventas.
+Validación de carga exitosa.
+
+El proceso permitió almacenar aproximadamente 1200 registros procesados dentro de la base de datos relacional utilizada posteriormente por Power BI.
+
+Azure SQL Database fue seleccionado debido a:
+
+Integración nativa con Power BI.
+Facilidad de administración.
+Bajo costo en el Free Tier.
+Conocimiento previo del equipo sobre SQL relacional.
+
+## 10.5 Visualización y análisis en Power BI
+
+Finalmente, Power BI fue conectado a Azure SQL Database para construir dashboards analíticos orientados a la toma de decisiones empresariales.
+
+Los reportes permiten visualizar:
+
+Ventas por región.
+Productos más vendidos.
+Clientes con mayor volumen de compras.
+Tendencias de ventas.
+Indicadores comerciales.
+
+La automatización del pipeline garantiza que la información pueda actualizarse periódicamente sin intervención manual, reduciendo significativamente el rezago de datos identificado inicialmente en el caso.
+
 
 ## 11.Evidencias
+A continuación se presentan las evidencias de implementación del pipeline de datos desarrollado para DataCo.
+
+## Evidencia 1. Creación del contenedor RAW en Azure Data Lake
+
+Se evidencia la creación del contenedor RAW dentro de Azure Data Lake Storage Gen2 y la carga inicial del archivo ventas_dataco.csv.
+![Diagrama de Contexto](./assets/evidencia_01_datalake_raw.jpeg)
+
+## Evidencia 2. Despliegue del pipeline en Azure Data Factory
+
+Se muestra la configuración y despliegue exitoso del pipeline de ingesta utilizando la herramienta Copy Data de Azure Data Factory.
+![Diagrama de Contexto](./assets/evidencia_02_adf_deployment.jpeg)
+
+## Evidencia 3. Ejecución del pipeline en Azure Data Factory
+
+Se evidencia la ejecución satisfactoria del pipeline pipeline_raw_to_curated, mostrando estado “Succeeded” y tiempo de ejecución correcto.
+![Diagrama de Contexto](./assets/evidencia_03_adf_pipeline_run.jpeg)
+
+## Evidencia 4. Lectura y transformación de datos en Azure Databricks
+
+Se muestra la ejecución del notebook en Databricks realizando la lectura del archivo CSV desde el Data Lake y la visualización de registros crudos.
+![Diagrama de Contexto](./assets/evidencia_04_databriks_transformacion.jpeg)
+
+## Evidencia 5. Carga de datos hacia Azure SQL Database
+
+Se evidencia la conexión desde Python hacia Azure SQL Database y la carga de aproximadamente 1200 registros procesados hacia la tabla hechos_ventas.
+![Diagrama de Contexto](./assets/evidencia_05_colab_carga_sql.jpeg)
+
+## Evidencia 6. Consultas SQL sobre el almacén analítico
+
+Se presentan consultas ejecutadas sobre Azure SQL Database para validar la integridad y disponibilidad de los datos procesados.
+![Diagrama de Contexto](./assets/evidencia_06_sql_query_top10.jpeg)
+
+## Evidencia 7. Resumen estadístico de datos procesados
+
+Se muestra la validación de métricas y resultados finales obtenidos después de las transformaciones ETL.
+![Diagrama de Contexto](./assets/evidencia_07_sql_resumen.jpeg)
+
+## Evidencia 8. Dashboard analítico en Power BI
+
+Se evidencia la construcción del dashboard final conectado a Azure SQL Database para análisis de ventas y toma de decisiones.
+![Diagrama de Contexto](./assets/evidencia_08_powerbi_dashboard.jpeg)
 
 ## 12.Conclusiones
 
-## 13.Referencias
+* La implementación del pipeline permitió centralizar información dispersa en diferentes fuentes empresariales mediante servicios cloud escalables de Microsoft Azure.
+* Azure Data Factory facilitó la automatización del proceso ETL, reduciendo significativamente la dependencia de procesos manuales realizados en Excel.
+* Azure Data Lake Storage Gen2 permitió organizar correctamente los datos en capas RAW y CURATED, mejorando la gobernanza y trazabilidad de la información.
+* Azure Databricks permitió aplicar procesos de limpieza, validación y transformación que incrementaron la calidad de los datos utilizados para análisis.
+* Azure SQL Database funcionó como almacén analítico centralizado con integración eficiente hacia Power BI.
+* Los dashboards desarrollados en Power BI permiten obtener información actualizada para apoyar la toma de decisiones comerciales y operativas.
+* La arquitectura propuesta es escalable y puede adaptarse a futuros incrementos en volumen de datos o nuevas fuentes de información.
+* El proyecto permitió aplicar conceptos de computación en la nube, integración de datos y analítica empresarial utilizando herramientas ampliamente utilizadas en entornos reales.
+
+
