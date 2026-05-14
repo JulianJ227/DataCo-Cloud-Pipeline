@@ -18,6 +18,7 @@
 * Implementación del Pipeline
 * Evidencias
 * Conclusiones
+* Referencias
 
 ## 3. Matriz de control de cambios
 | Versión | Fecha | Responsable | Descripcion |
@@ -386,4 +387,14 @@ Se evidencia la construcción del dashboard final conectado a Azure SQL Database
 * La arquitectura propuesta es escalable y puede adaptarse a futuros incrementos en volumen de datos o nuevas fuentes de información.
 * El proyecto permitió aplicar conceptos de computación en la nube, integración de datos y analítica empresarial utilizando herramientas ampliamente utilizadas en entornos reales.
 
-
+## 13. Referencias
+* Microsoft Azure. Azure Data Factory Documentation.
+https://learn.microsoft.com/azure/data-factory/
+* Microsoft Azure. Azure Data Lake Storage Gen2 Documentation.
+https://learn.microsoft.com/azure/storage/blobs/data-lake-storage-introduction
+* Microsoft Azure. Azure Databricks Documentation.
+https://learn.microsoft.com/azure/databricks/
+* Microsoft Azure. Azure SQL Database Documentation.
+https://learn.microsoft.com/azure/azure-sql/database/
+* Microsoft Power BI Documentation.
+https://learn.microsoft.com/power-bi/
