@@ -1,7 +1,7 @@
 # Caso 2: Pipeline de Datos en la Nube - DataCo
 
 ## 1. Ficha General
-* **Integrantes:** Julian, Mateo Sanchez, Nataly Rivera Agudelo, Yesica Carolina Restrepo Acosta, Yuli Tatiana Marin Rondón
+* **Integrantes:** Julian Jimenez, Mateo Sanchez, Nataly Rivera Agudelo, Yesica Carolina Restrepo Acosta, Yuli Tatiana Marin Rondón
 * **Institución:** Tecnológico de Antioquia - Institución Universitaria
 * **Curso:** Computación en la Nube 2026-1
 * **Profesor:** Julian David Florez Sanchez
@@ -28,7 +28,7 @@
 | 2.0 | 5/5/26 | Yesica Restrepo | Creación diagrama c2|
 | 4.0 | 6/5/26 | Nataly Rivera| Creación diagrama c3|
 | 5.0 | 7/5/26 | Yuli Marin | Creación de objetivos, requerimientos y Arquitectura de solución|
-| 6.0 | 7/5/26 | Julian | Servicios implementados|
+| 6.0 | 7/5/26 | Julian Jimenez| Servicios implementados|
 | 7.0 | 12/5/26 | Yuli Marin | Arreglos finales documentación|
 
 
