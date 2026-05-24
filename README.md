@@ -381,6 +381,12 @@ Se muestra la validación de métricas y resultados finales obtenidos después d
 Se evidencia la construcción del dashboard final conectado a Azure SQL Database para análisis de ventas y toma de decisiones.
 ![Diagrama de Contexto](./assets/evidencia_08_powerbi_dashboard.jpeg)
 
+## Evidencia 9. Video de implementación del pipeline completo
+
+Se presenta el video demostrativo del pipeline de datos DataCo funcionando de extremo a extremo, mostrando la carga de archivos desde el dashboard web, el procesamiento automático, las transformaciones aplicadas, la carga a Azure SQL y la visualización en el dashboard web y Power BI.
+
+[Ver video de implementación](./assets/video_pipeline_dataco.mp4)
+
 ## 12.Conclusiones
 
 * La implementación del pipeline permitió centralizar información dispersa en diferentes fuentes empresariales mediante servicios cloud escalables de Microsoft Azure.
