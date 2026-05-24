@@ -97,18 +97,22 @@ La arquitectura implementada permite integrar datos provenientes de múltiples s
 
 | Servicio | Función |
 |---|---|
-| Azure Data Factory | Orquestación e ingesta automática de datos |
+| Azure Data Factory | Orquestación e ingesta automática de datos cada 4 horas |
 | Data Lake Storage Gen2 | Almacenamiento de datos raw y curated |
-| Azure Databricks | Limpieza y transformación de datos |
-| Azure SQL Database | Almacén relacional final |
-| Power BI | Visualización y análisis de datos |
+| Azure Functions | Transformación automática de datos cada 4 horas |
+| Azure App Service | Backend de la API Flask para el dashboard web |
+| Azure SQL Database | Almacén relacional final con las 4 tablas de hechos |
+| Power BI Desktop | Visualización y análisis de datos ejecutivos |
+| Dashboard Web (GitHub Pages) | Portal web para carga de archivos y visualización en tiempo real |
+
 
 ## 7.2 Flujo de Datos
-* Los archivos CSV son cargados en la zona raw del Data Lake.
-* Azure Data Factory detecta e ingesta los archivos.
-* Azure Databricks ejecuta procesos de limpieza y transformación.
-* Los datos procesados son almacenados en Azure SQL Database.
-* Power BI consume la información para generar dashboards automáticos.
+* El usuario sube archivos CSV desde el dashboard web o directamente al Data Lake.
+* Azure Data Factory copia automáticamente los archivos de `raw/` a `curated/` cada 4 horas.
+* Azure Functions ejecuta automáticamente las transformaciones cada 4 horas: estandarización de fechas, eliminación de duplicados, corrección de códigos y normalización de nombres.
+* Los datos transformados se cargan en Azure SQL Database en 4 tablas: hechos_ventas, hechos_inventario, hechos_gps y hechos_crm.
+* Power BI Desktop consume los datos de Azure SQL para generar reportes ejecutivos.
+* El dashboard web consulta la API Flask en tiempo real para mostrar visualizaciones actualizadas.
 
 ## 7.3 Beneficios
 * Automatización del procesamiento de datos.
@@ -280,22 +284,23 @@ Flujo automatizado de datos.
 
 La implementación permitió reducir completamente los procesos manuales de carga de información que anteriormente eran realizados en Excel.
 
-## 10.3 Transformación de datos con Azure Databricks
+## 10.3 Transformación de datos con Azure Functions y Flask API
 
-Una vez ingeridos los datos, se implementó Azure Databricks para realizar las transformaciones y limpieza de información.
+Se implementaron dos mecanismos de transformación complementarios:
 
-Se desarrollaron notebooks en Python utilizando Pandas y procesamiento distribuido compatible con Spark para:
+**Transformación automática con Azure Functions:** Se desarrolló una Azure Function con timer trigger que se ejecuta automáticamente cada 4 horas. Lee los archivos desde el Data Lake, aplica las transformaciones y carga los resultados en Azure SQL sin intervención manual.
 
-Leer archivos desde Azure Data Lake.
-Validar estructura de los datos.
-Eliminar registros duplicados.
-Estandarizar formatos.
-Calcular métricas derivadas.
-Preparar la información para análisis.
+**Transformación bajo demanda con Flask API:** Se desarrolló una API REST con Flask desplegada en Azure App Service que permite ejecutar las transformaciones manualmente desde el dashboard web.
 
-Durante la ejecución del notebook se validó la lectura correcta de aproximadamente 1250 registros crudos provenientes del Data Lake.
+Las transformaciones aplicadas fueron:
 
-Las transformaciones implementadas permitieron mejorar la calidad y consistencia de la información antes de su carga final al almacén analítico.
+**SAP — Ventas:** estandarización de fechas de DD/MM/YYYY a YYYY-MM-DD, eliminación de 50 registros duplicados, cálculo de valor_total = cantidad × precio_unitario, estandarización de texto a mayúsculas. Tasa de calidad resultante: 96%.
+
+**Oracle — Inventario:** corrección de códigos de producto (PRD-001 → PROD001), relleno de fechas de vencimiento nulas con "SIN_VENCIMIENTO", estandarización de bodegas.
+
+**GPS — Flota:** eliminación de registros con tiempos negativos, relleno de coordenadas nulas con 0, relleno de consumo de combustible con el promedio.
+
+**Salesforce — CRM:** estandarización de nombres de clientes (múltiples variantes → nombre único), relleno de valores de acuerdo nulos con 0.
 
 ## 10.4 Carga de datos hacia Azure SQL Database
 
