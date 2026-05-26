@@ -388,6 +388,11 @@ Se presenta el video demostrativo del pipeline de datos DataCo funcionando de ex
 [![Ver demo](https://raw.githubusercontent.com/JulianJ227/DataCo-Cloud-Pipeline/main/assets/preview.png)](https://github.com/JulianJ227/DataCo-Cloud-Pipeline/raw/main/assets/video-pipeline-dataco.mp4)
 [▶️ Ver video de implementación](https://github.com/JulianJ227/DataCo-Cloud-Pipeline/raw/main/assets/video-pipeline-dataco.mp4)
 
+## Diapositivas
+
+[Presentacion](./assets/presentacion.pdf)
+
+
 ## 12.Conclusiones
 
 * La implementación del pipeline permitió centralizar información dispersa en diferentes fuentes empresariales mediante servicios cloud escalables de Microsoft Azure.
@@ -410,3 +415,4 @@ https://learn.microsoft.com/azure/databricks/
 https://learn.microsoft.com/azure/azure-sql/database/
 * Microsoft Power BI Documentation.
 https://learn.microsoft.com/power-bi/
+
