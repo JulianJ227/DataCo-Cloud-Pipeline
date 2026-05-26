@@ -385,6 +385,7 @@ Se evidencia la construcción del dashboard final conectado a Azure SQL Database
 
 Se presenta el video demostrativo del pipeline de datos DataCo funcionando de extremo a extremo, mostrando la carga de archivos desde el dashboard web, el procesamiento automático, las transformaciones aplicadas, la carga a Azure SQL y la visualización en el dashboard web y Power BI.
 
+[![Ver demo](https://raw.githubusercontent.com/JulianJ227/DataCo-Cloud-Pipeline/main/assets/preview.png)](https://github.com/JulianJ227/DataCo-Cloud-Pipeline/raw/main/assets/video-pipeline-dataco.mp4)
 [▶️ Ver video de implementación](https://github.com/JulianJ227/DataCo-Cloud-Pipeline/raw/main/assets/video-pipeline-dataco.mp4)
 
 ## 12.Conclusiones
